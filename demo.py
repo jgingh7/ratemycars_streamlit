@@ -133,11 +133,27 @@ if selection:
 #WHAT IS THE AVERAGE RATING?
 
 
-# List the top 3 rated cars for each manufacturer, along with the average rating of each car
-# select * from cars_made_from_come_with C, ratings_rate R, car_manufacturers CM where C.car_id = R.id_car and C.id_manu = CM.car_manu_id;
+# For a given manufacturer, list top 3 cars with highest rating, along with the average rating of each car
+# 
+"## Query top 3 cars with highest rating, along with the average rating of each car"
+sql_manu_name_info = 'select name from car_manufacturers;'
+manu_name_info = query_db(sql_manu_name_info)
+manu_names = manu_name_info['name'].tolist()
+
+selection = st.selectbox('Choose a car manufacturer', manu_names)
+if selection:
+    sql_top_cars = f"""select C.model, round(avg(R.num_stars),2) as "average rating"
+                    from cars_made_from_come_with C, ratings_rate R, car_manufacturers CM
+                    where C.car_id = R.id_car and C.id_manu = CM.car_manu_id and CM.name = '{selection}'
+                    group by C.car_id order by "average rating" desc limit 3;"""
+    top_cars_info = query_db(sql_top_cars)
+    if not top_cars_info.empty:
+        st.dataframe(top_cars_info)
+    else:
+        st.write('No corresponding cars.')
 
 
-# List top 3 tire manufacturers with highest rated cars on average
+# List top 5 tire manufacturers with highest rated cars on average
 '## Top 5 tire manufacturers with highest rated cars on average'
 sql_top_rate_tire_manu = f"""select TM.name, round(avg(R.num_stars),2) as "average rating"
                                 from tire_manufacturers TM, tires_made_from T, cars_made_from_come_with C, ratings_rate R
@@ -149,12 +165,22 @@ if not top_rate_tire_manu_info.empty:
 else:
     st.write('No corresponding tire manufacturer.')
 
+# List top 10 users who have rated the most for selected country's cars
+"## Query top 10 users who have rated the most for selected country's cars"
+sql_manu_country_info = 'select hq_country from car_manufacturers group by hq_country;'
+manu_country_info = query_db(sql_manu_country_info)
+manu_countries = manu_country_info['hq_country'].tolist()
 
-
-# List top 10 users who rated for japanese cars
-
-
-
+selection = st.selectbox('Choose a country', manu_countries)
+if selection:
+    sql_users = f"""select U.username, count(*) as "rating counts"
+                        from cars_made_from_come_with C, car_manufacturers CM, ratings_rate R, Users U
+                        where C.id_manu = CM.car_manu_id and R.id_car = C.car_id and R.id_user=U.user_id and CM.HQ_country='{selection}'
+                        group by U.user_id order by "rating counts" desc limit 10;"""
+    users = query_db(sql_users)['username'].tolist()
+    users[-1] = "and " + users[-1]
+    users_str = ', '.join([str(elem) for elem in users])
+    st.write(f"The top 10 users who have rated the most for {selection} are {users_str}.")
 
 
 
