@@ -134,8 +134,7 @@ if selection:
 
 
 # For a given manufacturer, list top 3 cars with highest rating, along with the average rating of each car
-# 
-"## Query top 3 cars with highest rating, along with the average rating of each car"
+"## Query top 3 cars with highest rating for the selected car manufacturer, along with the average rating of each car"
 sql_manu_name_info = 'select name from car_manufacturers;'
 manu_name_info = query_db(sql_manu_name_info)
 manu_names = manu_name_info['name'].tolist()
