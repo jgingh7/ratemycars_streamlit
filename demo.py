@@ -1,6 +1,7 @@
 import pandas as pd
 import psycopg2
 import streamlit as st
+from statistics import mean 
 from configparser import ConfigParser
 
 '# RateMyCar'
@@ -105,8 +106,7 @@ if selection:
         [str(elem) for elem in car_models_years])
 
     st.write(
-        f"The below cars are sold by dealer '{dealer_name}'\n\n {car_models_years_str}")
-#TOTAL HOW MANY CARS?
+        f"The below cars are sold by dealer '{dealer_name}' with total of {len(car_models_years)} car(s): \n\n {car_models_years_str}")
 
 # Show the ratings received by a car
 '## Query the ratings for the selected car'
@@ -127,6 +127,8 @@ if selection:
                         where C.car_id = {car_id} and R.id_car = {car_id};"""
     rating_info = query_db(sql_ratings)
     if not rating_info.empty:
+        rating_avg = round(mean(rating_info['num_stars'].tolist()),2)
+        st.write(f'Average rating: {rating_avg}')
         st.dataframe(rating_info)
     else:
         st.write('No ratings exists.')
@@ -177,6 +179,9 @@ if selection:
                         where C.id_manu = CM.car_manu_id and R.id_car = C.car_id and R.id_user=U.user_id and CM.HQ_country='{selection}'
                         group by U.user_id order by "rating counts" desc limit 10;"""
     users = query_db(sql_users)['username'].tolist()
-    users[-1] = "and " + users[-1]
+    
+    if len(users) > 1:
+        users[-1] = "and " + users[-1]
+    
     users_str = ', '.join([str(elem) for elem in users])
     st.write(f"The top 10 users who have rated the most for {selection} are {users_str}.")
