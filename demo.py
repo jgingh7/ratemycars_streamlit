@@ -3,7 +3,7 @@ import psycopg2
 import streamlit as st
 from configparser import ConfigParser
 
-'# Project: Cars, Tires, Rating'
+'# RateMyCar'
 
 
 @st.cache
@@ -46,7 +46,7 @@ def query_db(sql: str):
 
 
 # Query for cars with certain tires
-'## Query for cars with selected tires'
+'## Query cars with selected tires'
 sql_tire_info = 'select tire_id, model from tires_made_from;'
 tire_info = query_db(sql_tire_info)
 tire_ids, tire_models = tire_info['tire_id'].tolist(), tire_info['model'].tolist()
@@ -81,7 +81,7 @@ else:
     st.write('No cars or no tires.')
 
 # See cars sold by a specific dealer
-'## Query for cars by sold by selected dealers'
+'## Query cars sold by selected dealers'
 sql_dealer_info = 'select dealer_id, name from dealers;'
 dealer_info = query_db(sql_dealer_info)
 dealer_ids, dealer_names = dealer_info['dealer_id'].tolist(), dealer_info['name'].tolist()
@@ -109,7 +109,7 @@ if selection:
 #TOTAL HOW MANY CARS?
 
 # Show the ratings received by a car
-'## Query for the ratings of a selected car'
+'## Query the ratings for the selected car'
 sql_car_info = 'select car_id, model, year from cars_made_from_come_with;'
 car_info = query_db(sql_car_info)
 car_ids, car_models, car_model_years = car_info['car_id'].tolist(), car_info['model'].tolist(), car_info['year'].tolist()
@@ -134,7 +134,23 @@ if selection:
 
 
 # List the top 3 rated cars for each manufacturer, along with the average rating of each car
+# select * from cars_made_from_come_with C, ratings_rate R, car_manufacturers CM where C.car_id = R.id_car and C.id_manu = CM.car_manu_id;
+
+
 # List top 3 tire manufacturers with highest rated cars on average
+'## Top 5 tire manufacturers with highest rated cars on average'
+sql_top_rate_tire_manu = f"""select TM.name, round(avg(R.num_stars),2) as "average rating"
+                                from tire_manufacturers TM, tires_made_from T, cars_made_from_come_with C, ratings_rate R
+                                where TM.tire_manu_id = T.id_manu and T.tire_id = C.id_tire and R.id_car = C.car_id group by TM.tire_manu_id
+                                order by "average rating" desc limit 5;"""
+top_rate_tire_manu_info = query_db(sql_top_rate_tire_manu)
+if not top_rate_tire_manu_info.empty:
+    st.dataframe(top_rate_tire_manu_info)
+else:
+    st.write('No corresponding tire manufacturer.')
+
+
+
 # List top 10 users who rated for japanese cars
 
 
