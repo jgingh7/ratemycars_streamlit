@@ -74,6 +74,7 @@ def insert_db(sql: str):
     return
 
 
+# See a list of the main entity tables in the database (i.e. cars, tires, manufacturers, dealers)
 '## Read main entity tables'
 
 name_mapping = {'Cars': 'Cars_made_from_come_with', 'Car Manufacturers': 'Car_manufacturers',
@@ -88,6 +89,7 @@ if table_name:
     st.dataframe(df)
 
 
+# Add a rating and/or comment on a car (and see user statistics and previous ratings)
 '## Add a rating and comment'
 # Dropdown for cars list
 car_full_info = f"""select C.car_id, C.year, M.name, C.model
@@ -129,7 +131,7 @@ if selected_car and selected_user and user_rating and user_comment and submit_bu
     next_val = query_db(next_id)
     next_rating_id = next_val['max_id'].tolist()[0]+1
 
-    sql_add_rc = f"""insert into Ratings_rate (rating_id, num_stars, comment, id_car, id_user) 
+    sql_add_rc = f"""insert into Ratings_rate (rating_id, num_stars, comment, id_car, id_user)
                     values ({next_rating_id}, {user_rating}, '{user_comment}', {car_id}, {user_id})"""
 
     # insert into db and refresh the cache to update
@@ -137,9 +139,9 @@ if selected_car and selected_user and user_rating and user_comment and submit_bu
 
     # show user statistics and previously submitted ratings:
     f'### Your statistics:'
-    user_stats = f"""select COUNT(*) as ratings_count, ROUND(AVG(num_stars),1) as avg_rating 
+    user_stats = f"""select COUNT(*) as ratings_count, ROUND(AVG(num_stars),1) as avg_rating
                     from Ratings_rate
-                    group by id_user 
+                    group by id_user
                     having id_user ={user_id};"""
     user_stat = query_db(user_stats)
     u_count, u_avg = user_stat['ratings_count'].tolist(
@@ -148,8 +150,8 @@ if selected_car and selected_user and user_rating and user_comment and submit_bu
     f'You have rated a total of {u_count} times. Your average car rating is {u_avg}.'
 
     f'Your previous ratings:'
-    prev_ratings = f"""select Ra.num_stars, Ra.comment, Ca.year, Ca.name, Ca.model, Ra.time_created 
-                    from Ratings_rate Ra, 
+    prev_ratings = f"""select Ra.num_stars, Ra.comment, Ca.year, Ca.name, Ca.model, Ra.time_created
+                    from Ratings_rate Ra,
                         (select C.car_id, C.year, M.name, C.model
                         from Cars_made_from_come_with C, Car_manufacturers M
                         where C.id_manu = M.car_manu_id) Ca
@@ -159,6 +161,7 @@ if selected_car and selected_user and user_rating and user_comment and submit_bu
     st.dataframe(your_prev_ratings)
 
 
+# Show cars made by certain manufacturers
 '## Query cars by manufacturer'
 
 sql_manufacturer_names = 'select name from Car_manufacturers order by name asc;'
@@ -171,7 +174,7 @@ if manufacturer_name:
     id_info = query_db(manufacturer_id).loc[0]['car_manu_id']
 
     f'Cars by {manufacturer_name}:'
-    cars_manufacturers_table = f"""select C.year, M.name, C.model 
+    cars_manufacturers_table = f"""select C.year, M.name, C.model
                                    from Cars_made_from_come_with C, Car_manufacturers M
 		                           where C.id_manu = M.car_manu_id and M.car_manu_id = {id_info};"""
     df = query_db(cars_manufacturers_table)
@@ -205,6 +208,7 @@ if selection:
         st.write('No ratings exists.')
 
 
+# Query for cars with at least a certain average rating
 '## Query cars with at least a certain rating'
 
 ratings_list = [4, 3, 2, 1]
@@ -237,7 +241,7 @@ if selection:
     sql_top_cars = f"""select C.model, round(avg(R.num_stars),2) as "average rating"
                     from cars_made_from_come_with C, ratings_rate R, car_manufacturers CM
                     where C.car_id = R.id_car and C.id_manu = CM.car_manu_id and CM.name = '{selection}'
-                    group by C.car_id order by "average rating" desc limit 3;"""
+                    group by C.car_id, C.model order by "average rating" desc limit 3;"""
     top_cars_info = query_db(sql_top_cars)
     if not top_cars_info.empty:
         st.dataframe(top_cars_info)
@@ -245,6 +249,7 @@ if selection:
         st.write('No corresponding cars.')
 
 
+# List the lowest rated car for a given manufacturer, along with the average rating of the car
 '## List the lowest rated car for a given manufacturer, along with the average rating of the car'
 
 manufacturer_name2 = st.selectbox(
@@ -324,6 +329,7 @@ if selection:
         f"The below cars are sold by dealer '{dealer_name}' with total of {len(car_models_years)} car(s): \n\n {car_models_years_str}")
 
 
+# For a given dealer, list the top 3 rated cars, along with the average rating of each car
 '## For a given dealer, list the top 3 rated cars, along with the average rating of each car'
 
 sql_dealer_names = 'select name from Dealers order by name asc;'
@@ -371,6 +377,7 @@ if selection:
         f"The top 10 users who have rated the most for {selection} are {users_str}.")
 
 
+# List the cars, tire models, and tire types of newer cars (released in 2018 or later) with an average car rating of 3 or above
 '## List the car and tire information of newer cars (released in 2018 or later) with an average car rating of 3 or above'
 
 new_car_tires = f"""select Ca.year, Ca.name, Ca.model, T.tire_manufacturer, T.model as tire_model, T.type, Ra.avg_rating
@@ -395,7 +402,7 @@ st.dataframe(car_tires)
 '## Top 10 tires with the highest car ratings'
 sql_top_rate_tire = f"""select T.model, round(avg(R.num_stars),2) as "average rating"
                         from ratings_rate R, cars_made_from_come_with C, tires_made_from T
-                        where C.id_tire=T.tire_id and R.id_car=C.car_id group by T.tire_id order by "average rating" desc limit 10;"""
+                        where C.id_tire=T.tire_id and R.id_car=C.car_id group by T.tire_id, T.model order by "average rating" desc limit 10;"""
 top_rate_tire_info = query_db(sql_top_rate_tire)
 if not top_rate_tire_info.empty:
     st.dataframe(top_rate_tire_info)
@@ -407,7 +414,7 @@ else:
 '## Top 5 tire manufacturers with highest rated cars on average'
 sql_top_rate_tire_manu = f"""select TM.name, round(avg(R.num_stars),2) as "average rating"
                                 from tire_manufacturers TM, tires_made_from T, cars_made_from_come_with C, ratings_rate R
-                                where TM.tire_manu_id = T.id_manu and T.tire_id = C.id_tire and R.id_car = C.car_id group by TM.tire_manu_id
+                                where TM.tire_manu_id = T.id_manu and T.tire_id = C.id_tire and R.id_car = C.car_id group by TM.tire_manu_id, TM.name
                                 order by "average rating" desc limit 5;"""
 top_rate_tire_manu_info = query_db(sql_top_rate_tire_manu)
 if not top_rate_tire_manu_info.empty:
